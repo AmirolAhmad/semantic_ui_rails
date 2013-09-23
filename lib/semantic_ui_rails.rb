@@ -1,7 +1,6 @@
-require 'semantic_ui_rails/version'
-require 'rails'
+require "semantic_ui_rails/version"
+require "semantic_ui_rails/engine"
 
-module Semantic
-    class Engine < ::Rails::Engine
-    end
+module SemanticRails
+  # Your code goes here...
 end
