@@ -8,7 +8,7 @@ Gem::Specification.new do |spec|
   spec.version       = SemanticRails::VERSION
   spec.authors       = ["amirolahmad"]
   spec.email         = ["9w2pdf@gmail.com"]
-  spec.description   = %q{This is a gem for Semantic UI based on version 0.1.}
+  spec.description   = %q{This is a gem for Semantic UI based on version 0.0.1.}
   spec.summary       = %q{Semantic empowers designers and developers by creating a language for sharing UI.}
   spec.homepage      = "https://github.com/amirolahmad/semantic-ui-rails"
   spec.license       = "MIT"
