@@ -1,11 +1,11 @@
 # coding: utf-8
 lib = File.expand_path('../lib', __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require 'semantic-ui-rails/version'
+require 'semantic_ui_rails/version'
 
 Gem::Specification.new do |spec|
-  spec.name          = "pace_rails"
-  spec.version       = PaceRails::VERSION
+  spec.name          = "semantic_ui_rails"
+  spec.version       = SemanticRails::VERSION
   spec.authors       = ["amirolahmad"]
   spec.email         = ["9w2pdf@gmail.com"]
   spec.description   = %q{This is a gem for Semantic UI based on version 0.1.}
