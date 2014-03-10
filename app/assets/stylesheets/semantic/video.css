@@ -1,29 +1,35 @@
 /*
- * # Semantic Video
- * http://github.com/quirkyinc/semantic
+ * # Semantic - Video
+ * http://github.com/jlukic/semantic-ui/
  *
  *
  * Copyright 2013 Contributors
  * Released under the MIT license
  * http://opensource.org/licenses/MIT
  *
- * Released: July 30, 2013
  */
+
 /*******************************
             Video
 *******************************/
+
 .ui.video {
   position: relative;
   max-width: 100%;
 }
+
 /*--------------
      Content
 ---------------*/
+
 /* Placeholder Image */
+
 .ui.video .placeholder {
   background-color: #333333;
 }
+
 /* Play Icon Overlay */
+
 .ui.video .play {
   cursor: pointer;
   position: absolute;
@@ -36,11 +42,9 @@
   filter: alpha(opacity=60);
   opacity: 0.6;
   -webkit-transition: opacity 0.3s;
-  -moz-transition: opacity 0.3s;
-  -o-transition: opacity 0.3s;
-  -ms-transition: opacity 0.3s;
   transition: opacity 0.3s;
 }
+
 .ui.video .play.icon:before {
   position: absolute;
   top: 50%;
@@ -51,31 +55,40 @@
   color: #FFFFFF;
   text-shadow: 0px 3px 3px rgba(0, 0, 0, 0.4);
 }
+
 .ui.video .placeholder {
   display: block;
   width: 100%;
   height: 100%;
 }
+
 /* IFrame Embed */
+
 .ui.video .embed {
   display: none;
 }
+
 /*******************************
             States
 *******************************/
+
 /*--------------
     Hover
 ---------------*/
+
 .ui.video .play:hover {
   opacity: 1;
 }
+
 /*--------------
      Active
 ---------------*/
+
 .ui.video.active .play,
 .ui.video.active .placeholder {
   display: none;
 }
+
 .ui.video.active .embed {
   display: block;
 }
