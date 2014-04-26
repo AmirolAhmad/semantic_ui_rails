@@ -1,10 +1,13 @@
-/*  ******************************
-  Module - Tabs
-  Author: Jack Lukic
-  Notes: First Commit Aug 15, 2012
+/*
+ * # Semantic - Tab
+ * http://github.com/jlukic/semantic-ui/
+ *
+ * Copyright 2013 Contributors
+ * Released under the MIT license
+ * http://opensource.org/licenses/MIT
+ *
+ */
 
-  History based tab navigation
-******************************  */
 
 ;(function ($, window, document, undefined) {
 
@@ -35,7 +38,7 @@
       error           = settings.error,
 
       eventNamespace  = '.' + settings.namespace,
-      moduleNamespace = settings.namespace + '-module',
+      moduleNamespace = 'module-' + settings.namespace,
 
       instance        = $module.data(moduleNamespace),
 
@@ -44,39 +47,56 @@
       queryArguments  = [].slice.call(arguments, 1),
 
       module,
-      invokedResponse
+      returnedValue
     ;
 
     module = {
 
       initialize: function() {
         module.debug('Initializing Tabs', $module);
+
+        // set up automatic routing
+        if(settings.auto) {
+          module.verbose('Setting up automatic tab retrieval from server');
+          settings.apiSettings = {
+            url: settings.path + '/{$tab}'
+          };
+        }
+
         // attach history events
         if(settings.history) {
+          module.debug('Initializing page state');
           if( $.address === undefined ) {
             module.error(error.state);
             return false;
           }
-          else if(settings.path === false) {
-            module.error(error.path);
-            return false;
-          }
           else {
-            if(settings.auto) {
-              settings.apiSettings = {
-                url: settings.path + '/{$tab}'
-              };
+            if(settings.historyType == 'hash') {
+              module.debug('Using hash state change to manage state');
             }
-            module.verbose('Address library found adding state change event');
+            if(settings.historyType == 'html5') {
+              module.debug('Using HTML5 to manage state');
+              if(settings.path !== false) {
+                $.address
+                  .history(true)
+                  .state(settings.path)
+                ;
+              }
+              else {
+                module.error(error.path);
+                return false;
+              }
+            }
             $.address
-              .state(settings.path)
               .unbind('change')
               .bind('change', module.event.history.change)
             ;
           }
         }
+
         // attach events if navigation wasn't set to window
         if( !$.isWindow( element ) ) {
+          module.debug('Attaching tab activation events to element', $module);
           $module
             .on('click' + eventNamespace, module.event.click)
           ;
@@ -94,23 +114,26 @@
       destroy: function() {
         module.debug('Destroying tabs', $module);
         $module
+          .removeData(moduleNamespace)
           .off(eventNamespace)
         ;
       },
 
       event: {
-        click: function() {
-          module.debug('Navigation clicked');
+        click: function(event) {
           var
             tabPath = $(this).data(metadata.tab)
           ;
           if(tabPath !== undefined) {
             if(settings.history) {
+              module.verbose('Updating page state', event);
               $.address.value(tabPath);
             }
             else {
+              module.verbose('Changing tab without state management', event);
               module.changeTab(tabPath);
             }
+            event.preventDefault();
           }
           else {
             module.debug('No tab specified');
@@ -161,6 +184,12 @@
         }
       },
 
+      set: {
+        state: function(url) {
+          $.address.value(url);
+        }
+      },
+
       changeTab: function(tabPath) {
         var
           pushStateAvailable = (window.history && window.history.pushState),
@@ -169,9 +198,9 @@
           // only get default path if not remote content
           pathArray = (remoteContent && !shouldIgnoreLoad)
             ? module.utilities.pathToArray(tabPath)
-            : module.get.defaultPathArray(tabPath),
-          tabPath   = module.utilities.arrayToPath(pathArray)
+            : module.get.defaultPathArray(tabPath)
         ;
+        tabPath = module.utilities.arrayToPath(pathArray);
         module.deactivate.all();
         $.each(pathArray, function(index, tab) {
           var
@@ -223,6 +252,11 @@
             else {
               module.debug('Opened local tab', currentPath);
               module.activate.all(currentPath);
+              if( !module.cache.read(currentPath) ) {
+                module.cache.add(currentPath, true);
+                module.debug('First time tab loaded calling tab init');
+                $.proxy(settings.onTabInit, $tab)(currentPath, parameterArray, historyEvent);
+              }
               $.proxy(settings.onTabLoad, $tab)(currentPath, parameterArray, historyEvent);
             }
           }
@@ -238,8 +272,6 @@
         fetch: function(tabPath, fullTabPath) {
           var
             $tab             = module.get.tabElement(tabPath),
-            fullTabPath      = fullTabPath || tabPath,
-            cachedContent    = module.cache.read(fullTabPath),
             apiSettings      = {
               dataType     : 'html',
               stateContext : $tab,
@@ -259,8 +291,14 @@
               urlData: { tab: fullTabPath }
             },
             request         = $tab.data(metadata.promise) || false,
-            existingRequest = ( request && request.state() === 'pending' )
+            existingRequest = ( request && request.state() === 'pending' ),
+            requestSettings,
+            cachedContent
           ;
+
+          fullTabPath   = fullTabPath || tabPath;
+          cachedContent = module.cache.read(fullTabPath);
+
           if(settings.cache && cachedContent) {
             module.debug('Showing existing content', fullTabPath);
             module.content.update(tabPath, cachedContent);
@@ -274,8 +312,10 @@
             ;
           }
           else if($.api !== undefined) {
-            module.debug('Retrieving remote content', fullTabPath);
-            $.api( $.extend(true, { headers: { 'X-Remote': true } }, settings.apiSettings, apiSettings) );
+            console.log(settings.apiSettings);
+            requestSettings = $.extend(true, { headers: { 'X-Remote': true } }, settings.apiSettings, apiSettings);
+            module.debug('Retrieving remote content', fullTabPath, requestSettings);
+            $.api( requestSettings );
           }
           else {
             module.error(error.api);
@@ -365,7 +405,7 @@
             module.error(error.recursion);
           }
           else {
-            module.debug('No default tabs found for', tabPath);
+            module.debug('No default tabs found for', tabPath, $tabs);
           }
           recursionDepth = 0;
           return tabPath;
@@ -426,26 +466,22 @@
       },
 
       setting: function(name, value) {
-        if(value !== undefined) {
-          if( $.isPlainObject(name) ) {
-            $.extend(true, settings, name);
-          }
-          else {
-            settings[name] = value;
-          }
+        if( $.isPlainObject(name) ) {
+          $.extend(true, settings, name);
+        }
+        else if(value !== undefined) {
+          settings[name] = value;
         }
         else {
           return settings[name];
         }
       },
       internal: function(name, value) {
-        if(value !== undefined) {
-          if( $.isPlainObject(name) ) {
-            $.extend(true, module, name);
-          }
-          else {
-            module[name] = value;
-          }
+        if( $.isPlainObject(name) ) {
+          $.extend(true, module, name);
+        }
+        else if(value !== undefined) {
+          module[name] = value;
         }
         else {
           return module[name];
@@ -530,13 +566,14 @@
       },
       invoke: function(query, passedArguments, context) {
         var
+          object = instance,
           maxDepth,
           found,
           response
         ;
         passedArguments = passedArguments || queryArguments;
         context         = element         || context;
-        if(typeof query == 'string' && instance !== undefined) {
+        if(typeof query == 'string' && object !== undefined) {
           query    = query.split(/[\. ]/);
           maxDepth = query.length - 1;
           $.each(query, function(depth, value) {
@@ -544,22 +581,21 @@
               ? value + query[depth + 1].charAt(0).toUpperCase() + query[depth + 1].slice(1)
               : query
             ;
-            if( $.isPlainObject( instance[value] ) && (depth != maxDepth) ) {
-              instance = instance[value];
+            if( $.isPlainObject( object[camelCaseValue] ) && (depth != maxDepth) ) {
+              object = object[camelCaseValue];
             }
-            else if( $.isPlainObject( instance[camelCaseValue] ) && (depth != maxDepth) ) {
-              instance = instance[camelCaseValue];
-            }
-            else if( instance[value] !== undefined ) {
-              found = instance[value];
+            else if( object[camelCaseValue] !== undefined ) {
+              found = object[camelCaseValue];
               return false;
             }
-            else if( instance[camelCaseValue] !== undefined ) {
-              found = instance[camelCaseValue];
+            else if( $.isPlainObject( object[value] ) && (depth != maxDepth) ) {
+              object = object[value];
+            }
+            else if( object[value] !== undefined ) {
+              found = object[value];
               return false;
             }
             else {
-              module.error(error.method);
               return false;
             }
           });
@@ -570,14 +606,14 @@
         else if(found !== undefined) {
           response = found;
         }
-        if($.isArray(invokedResponse)) {
-          invokedResponse.push(response);
+        if($.isArray(returnedValue)) {
+          returnedValue.push(response);
         }
-        else if(typeof invokedResponse == 'string') {
-          invokedResponse = [invokedResponse, response];
+        else if(returnedValue !== undefined) {
+          returnedValue = [returnedValue, response];
         }
         else if(response !== undefined) {
-          invokedResponse = response;
+          returnedValue = response;
         }
         return found;
       }
@@ -596,8 +632,8 @@
       module.initialize();
     }
 
-    return (invokedResponse !== undefined)
-      ? invokedResponse
+    return (returnedValue !== undefined)
+      ? returnedValue
       : this
     ;
 
@@ -627,8 +663,8 @@
 
     // uses pjax style endpoints fetching content from same url with remote-content headers
     auto            : false,
-
-    history         : false,
+    history         : true,
+    historyType     : 'hash',
     path            : false,
 
     context         : 'body',
@@ -636,7 +672,7 @@
     // max depth a tab can be nested
     maxDepth        : 25,
     // dont load content on first load
-    ignoreFirstLoad : true,
+    ignoreFirstLoad : false,
     // load tab content new every tab click
     alwaysRefresh   : false,
     // cache the content requests to pull locally
@@ -646,12 +682,12 @@
 
     error: {
       api        : 'You attempted to load content without API module',
-      noContent  : 'The tab you specified is missing a content url.',
       method     : 'The method you called is not defined',
-      state      : 'The state library has not been initialized',
       missingTab : 'Tab cannot be found',
+      noContent  : 'The tab you specified is missing a content url.',
       path       : 'History enabled, but no path was specified',
-      recursion  : 'Max recursive depth reached'
+      recursion  : 'Max recursive depth reached',
+      state      : 'The state library has not been initialized'
     },
 
     metadata : {
@@ -666,7 +702,7 @@
     },
 
     selector    : {
-      tabs : '.tab'
+      tabs : '.ui.tab'
     }
 
   };

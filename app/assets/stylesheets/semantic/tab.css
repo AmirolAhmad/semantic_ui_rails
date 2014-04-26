@@ -1,30 +1,39 @@
 /*
- * # Semantic Button
- * http://github.com/quirkyinc/semantic
+ * # Semantic - Tab
+ * http://github.com/jlukic/semantic-ui/
  *
  *
  * Copyright 2013 Contributors
  * Released under the MIT license
  * http://opensource.org/licenses/MIT
  *
- * Released: April 17 2013
  */
+
 /*******************************
-           UI Tabs 
+           UI Tabs
 *******************************/
+
 .ui.tab {
   display: none;
 }
+
+/*******************************
+             States
+*******************************/
+
+/*--------------------
+       Active
+---------------------*/
+
 .ui.tab.active,
 .ui.tab.open {
   display: block;
 }
-/*******************************
-             States
-*******************************/
+
 /*--------------------
        Loading
 ---------------------*/
+
 .ui.tab.loading {
   position: relative;
   overflow: hidden;
@@ -32,10 +41,12 @@
   min-height: 250px;
   text-indent: -10000px;
 }
+
 .ui.tab.loading * {
   position: relative !important;
   left: -10000px !important;
 }
+
 .ui.tab.loading:after {
   position: absolute;
   top: 50px;

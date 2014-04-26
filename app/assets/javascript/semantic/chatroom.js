@@ -1,28 +1,39 @@
-/*  ******************************
-  Module -  Chat Room
-  Author: Jack Lukic
-  Notes: First Commit Aug 8, 2012
-
-  Designed as a simple modular chat component
-******************************  */
+/*
+ * # Semantic - Chatroom
+ * http://github.com/jlukic/semantic-ui/
+ *
+ *
+ * Copyright 2013 Contributors
+ * Released under the MIT license
+ * http://opensource.org/licenses/MIT
+ *
+ */
 
 ;(function ($, window, document, undefined) {
 
 $.fn.chatroom = function(parameters) {
   var
-    settings  = $.extend(true, {}, $.fn.chatroom.settings, parameters),
+    $allModules    = $(this),
+    moduleSelector = $allModules.selector || '',
 
-    className = settings.className,
-    namespace = settings.namespace,
-    selector  = settings.selector,
-    error     = settings.error,
+    time           = new Date().getTime(),
+    performance    = [],
 
-    // hoist arguments
-    moduleArguments = arguments || false
+    query          = arguments[0],
+    methodInvoked  = (typeof query == 'string'),
+    queryArguments = [].slice.call(arguments, 1),
+    returnedValue
   ;
   $(this)
     .each(function() {
       var
+        settings  = $.extend(true, {}, $.fn.chatroom.settings, parameters),
+
+        className = settings.className,
+        namespace = settings.namespace,
+        selector  = settings.selector,
+        error     = settings.error,
+
         $module         = $(this),
 
         $expandButton   = $module.find(selector.expandButton),
@@ -39,6 +50,7 @@ $.fn.chatroom = function(parameters) {
         $messageButton  = $module.find(selector.messageButton),
 
         instance        = $module.data('module'),
+        element         = this,
 
         html            = '',
         users           = {},
@@ -432,8 +444,6 @@ $.fn.chatroom = function(parameters) {
 
         },
 
-
-
       setting: function(name, value) {
         if(value !== undefined) {
           if( $.isPlainObject(name) ) {
@@ -448,13 +458,11 @@ $.fn.chatroom = function(parameters) {
         }
       },
       internal: function(name, value) {
-        if(value !== undefined) {
-          if( $.isPlainObject(name) ) {
-            $.extend(true, module, name);
-          }
-          else {
-            module[name] = value;
-          }
+        if( $.isPlainObject(name) ) {
+          $.extend(true, module, name);
+        }
+        else if(value !== undefined) {
+          module[name] = value;
         }
         else {
           return module[name];
@@ -522,7 +530,6 @@ $.fn.chatroom = function(parameters) {
           if(moduleSelector) {
             title += ' \'' + moduleSelector + '\'';
           }
-          title += ' ' + '(' + $allDropdowns.size() + ')';
           if( (console.group !== undefined || console.table !== undefined) && performance.length > 0) {
             console.groupCollapsed(title);
             if(console.table) {
@@ -556,7 +563,7 @@ $.fn.chatroom = function(parameters) {
               found = instance[value];
             }
             else {
-              module.error(error.method);
+              module.error(error.method, query);
             }
           });
         }
@@ -571,7 +578,7 @@ $.fn.chatroom = function(parameters) {
       if(instance === undefined) {
         module.initialize();
       }
-      invokedResponse = module.invoke(query);
+      module.invoke(query);
     }
     else {
       if(instance !== undefined) {
@@ -582,8 +589,8 @@ $.fn.chatroom = function(parameters) {
   })
 ;
 
-  return (invokedResponse)
-    ? invokedResponse
+  return (returnedValue)
+    ? returnedValue
     : this
   ;
 };

@@ -1,49 +1,53 @@
-/*  ******************************
-   Semantic Module: Dropdown
-   Author: Jack Lukic
-   Notes: First Commit May 25, 2013
-
-******************************  */
+/*
+ * # Semantic - Sidebar
+ * http://github.com/jlukic/semantic-ui/
+ *
+ *
+ * Copyright 2013 Contributors
+ * Released under the MIT license
+ * http://opensource.org/licenses/MIT
+ *
+ */
 
 ;(function ( $, window, document, undefined ) {
 
 $.fn.sidebar = function(parameters) {
   var
-    $allModules     = $(this),
+    $allModules    = $(this),
+    $body          = $('body'),
+    $head          = $('head'),
 
-    settings        = ( $.isPlainObject(parameters) )
-      ? $.extend(true, {}, $.fn.sidebar.settings, parameters)
-      : $.fn.sidebar.settings,
+    moduleSelector = $allModules.selector || '',
 
-    selector        = settings.selector,
-    className       = settings.className,
-    namespace       = settings.namespace,
-    error           = settings.error,
+    time           = new Date().getTime(),
+    performance    = [],
 
-    eventNamespace  = '.' + namespace,
-    moduleNamespace = 'module-' + namespace,
-    moduleSelector  = $allModules.selector || '',
-
-    time            = new Date().getTime(),
-    performance     = [],
-
-    query           = arguments[0],
-    methodInvoked   = (typeof query == 'string'),
-    queryArguments  = [].slice.call(arguments, 1),
-    invokedResponse
+    query          = arguments[0],
+    methodInvoked  = (typeof query == 'string'),
+    queryArguments = [].slice.call(arguments, 1),
+    returnedValue
   ;
 
   $allModules
     .each(function() {
       var
-        $module  = $(this),
+        settings        = ( $.isPlainObject(parameters) )
+          ? $.extend(true, {}, $.fn.sidebar.settings, parameters)
+          : $.extend({}, $.fn.sidebar.settings),
 
-        $body    = $('body'),
-        $head    = $('head'),
-        $style   = $('style[title=' + namespace + ']'),
+        selector        = settings.selector,
+        className       = settings.className,
+        namespace       = settings.namespace,
+        error           = settings.error,
 
-        element  = this,
-        instance = $module.data(moduleNamespace),
+        eventNamespace  = '.' + namespace,
+        moduleNamespace = 'module-' + namespace,
+
+        $module         = $(this),
+        $style          = $('style[title=' + namespace + ']'),
+
+        element         = this,
+        instance        = $module.data(moduleNamespace),
         module
       ;
 
@@ -75,51 +79,72 @@ $.fn.sidebar = function(parameters) {
           $style  = $('style[title=' + namespace + ']');
         },
 
-        attach: {
-
-          events: function(selector, event) {
-            var
-              $toggle = $(selector)
+        attachEvents: function(selector, event) {
+          var
+            $toggle = $(selector)
+          ;
+          event = $.isFunction(module[event])
+            ? module[event]
+            : module.toggle
+          ;
+          if($toggle.size() > 0) {
+            module.debug('Attaching sidebar events to element', selector, event);
+            $toggle
+              .off(eventNamespace)
+              .on('click' + eventNamespace, event)
             ;
-            event = $.isFunction(module[event])
-              ? module[event]
-              : module.toggle
-            ;
-            if($toggle.size() > 0) {
-              module.debug('Attaching sidebar events to element', selector, event);
-              $toggle
-                .off(eventNamespace)
-                .on('click' + eventNamespace, event)
-              ;
-            }
-            else {
-              module.error(error.notFound);
-            }
           }
-
+          else {
+            module.error(error.notFound);
+          }
         },
 
-        show: function() {
-          module.debug('Showing sidebar');
+        show: function(callback) {
+          callback = $.isFunction(callback)
+            ? callback
+            : function(){}
+          ;
+          module.debug('Showing sidebar', callback);
           if(module.is.closed()) {
             if(!settings.overlay) {
+              if(settings.exclusive) {
+                module.hideAll();
+              }
               module.pushPage();
             }
             module.set.active();
+            callback();
+            $.proxy(settings.onChange, element)();
+            $.proxy(settings.onShow, element)();
           }
           else {
             module.debug('Sidebar is already visible');
           }
         },
 
-        hide: function() {
+        hide: function(callback) {
+          callback = $.isFunction(callback)
+            ? callback
+            : function(){}
+          ;
+          module.debug('Hiding sidebar', callback);
           if(module.is.open()) {
             if(!settings.overlay) {
               module.pullPage();
               module.remove.pushed();
             }
             module.remove.active();
+            callback();
+            $.proxy(settings.onChange, element)();
+            $.proxy(settings.onHide, element)();
           }
+        },
+
+        hideAll: function() {
+          $(selector.sidebar)
+            .filter(':visible')
+              .sidebar('hide')
+          ;
         },
 
         toggle: function() {
@@ -192,6 +217,7 @@ $.fn.sidebar = function(parameters) {
             module.debug('Adding body css to head', $style);
           }
         },
+
 
         remove: {
           bodyCSS: function() {
@@ -271,26 +297,22 @@ $.fn.sidebar = function(parameters) {
         },
 
         setting: function(name, value) {
-          if(value !== undefined) {
-            if( $.isPlainObject(name) ) {
-              $.extend(true, settings, name);
-            }
-            else {
-              settings[name] = value;
-            }
+          if( $.isPlainObject(name) ) {
+            $.extend(true, settings, name);
+          }
+          else if(value !== undefined) {
+            settings[name] = value;
           }
           else {
             return settings[name];
           }
         },
         internal: function(name, value) {
-          if(value !== undefined) {
-            if( $.isPlainObject(name) ) {
-              $.extend(true, module, name);
-            }
-            else {
-              module[name] = value;
-            }
+          if( $.isPlainObject(name) ) {
+            $.extend(true, module, name);
+          }
+          else if(value !== undefined) {
+            module[name] = value;
           }
           else {
             return module[name];
@@ -302,7 +324,7 @@ $.fn.sidebar = function(parameters) {
               module.performance.log(arguments);
             }
             else {
-              module.debug = Function.prototype.bind.call(console.info, console, settings.moduleName + ':');
+              module.debug = Function.prototype.bind.call(console.info, console, settings.name + ':');
               module.debug.apply(console, arguments);
             }
           }
@@ -313,13 +335,13 @@ $.fn.sidebar = function(parameters) {
               module.performance.log(arguments);
             }
             else {
-              module.verbose = Function.prototype.bind.call(console.info, console, settings.moduleName + ':');
+              module.verbose = Function.prototype.bind.call(console.info, console, settings.name + ':');
               module.verbose.apply(console, arguments);
             }
           }
         },
         error: function() {
-          module.error = Function.prototype.bind.call(console.error, console, settings.moduleName + ':');
+          module.error = Function.prototype.bind.call(console.error, console, settings.name + ':');
           module.error.apply(console, arguments);
         },
         performance: {
@@ -378,13 +400,14 @@ $.fn.sidebar = function(parameters) {
         },
         invoke: function(query, passedArguments, context) {
           var
+            object = instance,
             maxDepth,
             found,
             response
           ;
           passedArguments = passedArguments || queryArguments;
           context         = element         || context;
-          if(typeof query == 'string' && instance !== undefined) {
+          if(typeof query == 'string' && object !== undefined) {
             query    = query.split(/[\. ]/);
             maxDepth = query.length - 1;
             $.each(query, function(depth, value) {
@@ -392,22 +415,21 @@ $.fn.sidebar = function(parameters) {
                 ? value + query[depth + 1].charAt(0).toUpperCase() + query[depth + 1].slice(1)
                 : query
               ;
-              if( $.isPlainObject( instance[value] ) && (depth != maxDepth) ) {
-                instance = instance[value];
+              if( $.isPlainObject( object[camelCaseValue] ) && (depth != maxDepth) ) {
+                object = object[camelCaseValue];
               }
-              else if( $.isPlainObject( instance[camelCaseValue] ) && (depth != maxDepth) ) {
-                instance = instance[camelCaseValue];
-              }
-              else if( instance[value] !== undefined ) {
-                found = instance[value];
+              else if( object[camelCaseValue] !== undefined ) {
+                found = object[camelCaseValue];
                 return false;
               }
-              else if( instance[camelCaseValue] !== undefined ) {
-                found = instance[camelCaseValue];
+              else if( $.isPlainObject( object[value] ) && (depth != maxDepth) ) {
+                object = object[value];
+              }
+              else if( object[value] !== undefined ) {
+                found = object[value];
                 return false;
               }
               else {
-                module.error(error.method);
                 return false;
               }
             });
@@ -418,14 +440,14 @@ $.fn.sidebar = function(parameters) {
           else if(found !== undefined) {
             response = found;
           }
-          if($.isArray(invokedResponse)) {
-            invokedResponse.push(response);
+          if($.isArray(returnedValue)) {
+            returnedValue.push(response);
           }
-          else if(typeof invokedResponse == 'string') {
-            invokedResponse = [invokedResponse, response];
+          else if(returnedValue !== undefined) {
+            returnedValue = [returnedValue, response];
           }
           else if(response !== undefined) {
-            invokedResponse = response;
+            returnedValue = response;
           }
           return found;
         }
@@ -445,26 +467,25 @@ $.fn.sidebar = function(parameters) {
     })
   ;
 
-  return (invokedResponse !== undefined)
-    ? invokedResponse
+  return (returnedValue !== undefined)
+    ? returnedValue
     : this
   ;
 };
 
 $.fn.sidebar.settings = {
 
-  name   : 'Sidebar',
-  namespace    : 'sidebar',
+  name        : 'Sidebar',
+  namespace   : 'sidebar',
 
-  verbose      : true,
-  debug        : true,
-  performance  : true,
+  verbose     : true,
+  debug       : true,
+  performance : true,
 
-  useCSS       : true,
-  overlay      : false,
-  duration     : 300,
-
-  side         : 'left',
+  useCSS      : true,
+  exclusive   : true,
+  overlay     : false,
+  duration    : 300,
 
   onChange     : function(){},
   onShow       : function(){},
@@ -477,6 +498,10 @@ $.fn.sidebar.settings = {
     left   : 'left',
     right  : 'right',
     bottom : 'bottom'
+  },
+
+  selector: {
+    sidebar: '.ui.sidebar'
   },
 
   error   : {
